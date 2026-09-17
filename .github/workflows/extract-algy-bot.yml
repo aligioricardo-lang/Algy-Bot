@@ -1,11 +1,8 @@
-name: Extrair ALGY-BOT-V4.9 para a raiz
+name: Colocar ALGY-BOT-V4.9 na raiz
 
 on:
   push:
     branches: [main]
-    paths:
-      - 'ALGY-BOT-V4.9.zip'
-      - '.github/workflows/extract-algy-bot.yml'
   workflow_dispatch:
 
 permissions:
@@ -18,7 +15,7 @@ jobs:
       - name: Baixar repositório
         uses: actions/checkout@v4
 
-      - name: Extrair e colocar o conteúdo na página principal
+      - name: Extrair conteúdo para a página principal
         shell: bash
         run: |
           set -euo pipefail
@@ -27,7 +24,6 @@ jobs:
           mkdir -p .extract-tmp
           unzip -oq ALGY-BOT-V4.9.zip -d .extract-tmp
 
-          # Detecta a pasta única criada pelo ZIP (ex.: ALGY-BOT-V4.9)
           top_dirs=(.extract-tmp/*/)
           if [ "${#top_dirs[@]}" -eq 1 ] && [ -d "${top_dirs[0]}" ]; then
             src="${top_dirs[0]}"
@@ -35,25 +31,24 @@ jobs:
             src=".extract-tmp"
           fi
 
-          # Move o conteúdo da pasta para a raiz, sem alterar a estrutura interna.
+          # Coloca o conteúdo de ALGY-BOT-V4.9 diretamente na raiz,
+          # preservando as subpastas internas necessárias ao funcionamento do bot.
           cp -a "$src"/. ./
 
-          # Remove a pasta contêiner antiga, caso exista.
           rm -rf ALGY-BOT-V4.9
           rm -rf .extract-tmp
-
-          # O ZIP não precisa permanecer como pasta/arquivo de código na raiz.
           rm -f ALGY-BOT-V4.9.zip
 
-      - name: Verificar estrutura final
+      - name: Verificar resultado
         shell: bash
         run: |
           set -euo pipefail
-          echo 'Estrutura final da raiz:'
-          find . -maxdepth 2 -not -path './.git*' -print | sort
           test ! -d ALGY-BOT-V4.9
+          test ! -f ALGY-BOT-V4.9.zip
+          echo 'Conteúdo principal após a organização:'
+          find . -maxdepth 2 -not -path './.git*' -print | sort
 
-      - name: Commitar alteração
+      - name: Guardar alterações no GitHub
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
@@ -61,6 +56,6 @@ jobs:
           if git diff --cached --quiet; then
             echo 'Nenhuma alteração para commitar.'
           else
-            git commit -m 'Colocar conteúdo do ALGY-BOT-V4.9 na raiz'
+            git commit -m 'Organizar ALGY-BOT-V4.9 diretamente na raiz'
             git push
           fi
