@@ -1,4 +1,4 @@
-name: Extrair ALGY-BOT-V4.9
+name: Extrair ALGY-BOT-V4.9 para a raiz
 
 on:
   push:
@@ -18,21 +18,42 @@ jobs:
       - name: Baixar repositório
         uses: actions/checkout@v4
 
-      - name: Extrair ZIP
+      - name: Extrair e colocar o conteúdo na página principal
+        shell: bash
         run: |
+          set -euo pipefail
           test -f ALGY-BOT-V4.9.zip
-          mkdir -p .extract-tmp
-          unzip -o ALGY-BOT-V4.9.zip -d .extract-tmp
-          cp -a .extract-tmp/. .
           rm -rf .extract-tmp
-          rm -f .gitkeep
+          mkdir -p .extract-tmp
+          unzip -oq ALGY-BOT-V4.9.zip -d .extract-tmp
 
-      - name: Verificar conteúdo extraído
+          # Detecta a pasta única criada pelo ZIP (ex.: ALGY-BOT-V4.9)
+          top_dirs=(.extract-tmp/*/)
+          if [ "${#top_dirs[@]}" -eq 1 ] && [ -d "${top_dirs[0]}" ]; then
+            src="${top_dirs[0]}"
+          else
+            src=".extract-tmp"
+          fi
+
+          # Move o conteúdo da pasta para a raiz, sem alterar a estrutura interna.
+          cp -a "$src"/. ./
+
+          # Remove a pasta contêiner antiga, caso exista.
+          rm -rf ALGY-BOT-V4.9
+          rm -rf .extract-tmp
+
+          # O ZIP não precisa permanecer como pasta/arquivo de código na raiz.
+          rm -f ALGY-BOT-V4.9.zip
+
+      - name: Verificar estrutura final
+        shell: bash
         run: |
-          echo 'Arquivos e pastas extraídos:'
-          find . -type f -not -path './.git/*' -not -path './.extract-tmp/*' | sort
+          set -euo pipefail
+          echo 'Estrutura final da raiz:'
+          find . -maxdepth 2 -not -path './.git*' -print | sort
+          test ! -d ALGY-BOT-V4.9
 
-      - name: Commitar arquivos extraídos
+      - name: Commitar alteração
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
@@ -40,6 +61,6 @@ jobs:
           if git diff --cached --quiet; then
             echo 'Nenhuma alteração para commitar.'
           else
-            git commit -m 'Extrair arquivos e pastas do ALGY-BOT-V4.9.zip'
+            git commit -m 'Colocar conteúdo do ALGY-BOT-V4.9 na raiz'
             git push
           fi
