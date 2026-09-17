@@ -1,0 +1,45 @@
+name: Extrair ALGY-BOT-V4.9
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ALGY-BOT-V4.9.zip'
+      - '.github/workflows/extract-algy-bot.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+
+      - name: Extrair ZIP
+        run: |
+          test -f ALGY-BOT-V4.9.zip
+          mkdir -p .extract-tmp
+          unzip -o ALGY-BOT-V4.9.zip -d .extract-tmp
+          cp -a .extract-tmp/. .
+          rm -rf .extract-tmp
+          rm -f .gitkeep
+
+      - name: Verificar conteúdo extraído
+        run: |
+          echo 'Arquivos e pastas extraídos:'
+          find . -type f -not -path './.git/*' -not -path './.extract-tmp/*' | sort
+
+      - name: Commitar arquivos extraídos
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          if git diff --cached --quiet; then
+            echo 'Nenhuma alteração para commitar.'
+          else
+            git commit -m 'Extrair arquivos e pastas do ALGY-BOT-V4.9.zip'
+            git push
+          fi
